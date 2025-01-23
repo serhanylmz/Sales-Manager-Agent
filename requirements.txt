@@ -1,0 +1,13 @@
+sqlalchemy
+python-dotenv
+apscheduler
+requests
+groq
+pydantic
+pydantic-settings
+python-multipart
+beautifulsoup4
+resend
+googlesearch-python
+ratelimit
+aiohttp
