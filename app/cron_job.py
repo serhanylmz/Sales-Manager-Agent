@@ -25,8 +25,11 @@ groq_client = Groq(api_key=settings.groq_api_key)
 
 def send_email_notification(user_email: str, lead_data: dict, user_data: dict) -> bool:
     try:
+        # Determine greeting based on lead name availability
+        greeting = f"Dear {lead_data['lead_name']}" if lead_data['lead_name'] and lead_data['lead_name'] != 'None found' else f"Dear team at {lead_data['company_name']}"
+        
         # Generate personalized email content
-        prompt = f"""Write a professional sales email notification.
+        prompt = f"""Write a professional sales email.
 
 Context:
 - Your Name: {user_data['name']}
@@ -37,20 +40,28 @@ Context:
 Lead Information:
 - Company: {lead_data['company_name']}
 - Website: {lead_data['company_website']}
-- Contact: {lead_data['lead_name'] if lead_data['lead_name'] != 'None found' else 'TBD'}
+- Contact Name: {lead_data['lead_name'] if lead_data['lead_name'] != 'None found' else 'None'}
 - Company Description: {lead_data['company_description']}
 
-Write a professional email notification that:
-1. Introduces the potential lead
-2. Explains why they might be a good fit
-3. Suggests next steps
-4. Keeps it concise and actionable
+Requirements:
+1. Start with: "{greeting}"
+2. Write a compelling subject line about AI-powered sales solutions
+3. Mention specific details about their company that make them a good fit
+4. Explain how our AI solution can help them specifically
+5. Suggest next steps using general timeframes (e.g., "next week")
+6. End with your name: "{user_data['name']}\n{user_data['company_name']}"
+7. Keep it concise and actionable
+8. Don't use placeholders - use real company/contact names
+9. Don't mention specific dates or times
 
-Use a professional but conversational tone. Do not include any lead details in the email body as they will be added separately."""
+Use a professional but conversational tone."""
 
         completion = groq_client.chat.completions.create(
             model="llama-3.1-70b-versatile",
-            messages=[{"role": "user", "content": prompt}],
+            messages=[
+                {"role": "system", "content": "You are a professional sales email writer. Write personalized, compelling emails that use available information effectively."},
+                {"role": "user", "content": prompt}
+            ],
             temperature=0.7,
             max_completion_tokens=1024,
             top_p=1,
@@ -60,6 +71,11 @@ Use a professional but conversational tone. Do not include any lead details in t
         
         email_body = completion.choices[0].message.content
         
+        # Extract subject line (first line) and body (rest)
+        email_lines = email_body.split('\n')
+        subject_line = email_lines[0].replace('Subject:', '').strip()
+        email_content = '\n'.join(email_lines[1:]).strip()
+        
         # Create the full email with lead details header
         full_email = f"""Lead Details:
 Company Name: {lead_data['company_name']}
@@ -67,10 +83,10 @@ Company Website: {lead_data['company_website']}
 Lead Name: {lead_data['lead_name'] if lead_data['lead_name'] != 'None found' else 'TBD'}
 Lead Email: {lead_data['lead_email']}
 
-Email Subject: {email_body.split('\n')[0] if '\n' in email_body else 'New Lead Opportunity'}
+Email Subject: {subject_line}
 
 Email Body:
-{email_body.split('\n', 1)[1] if '\n' in email_body else email_body}
+{email_content}
 """
         
         # Create message
