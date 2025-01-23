@@ -21,6 +21,7 @@ ENV DATABASE_URL=sqlite:///./data/app.db
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
+ENV PYTHONDEVMODE=1
 
-# Run the application with the existing configuration
-CMD ["python", "main.py"] 
+# Use python -u to force unbuffered output
+CMD ["python", "-u", "main.py"] 
